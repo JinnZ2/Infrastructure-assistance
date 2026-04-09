@@ -1,0 +1,16 @@
+{
+  "placeholderImages": [
+    {
+      "id": "map-background",
+      "description": "Abstract topographical map background",
+      "imageUrl": "https://picsum.photos/seed/inframap/1200/800",
+      "imageHint": "map topography"
+    },
+    {
+      "id": "hero-infrastructure",
+      "description": "Critical infrastructure bridge",
+      "imageUrl": "https://picsum.photos/seed/infrahero/800/600",
+      "imageHint": "bridge architecture"
+    }
+  ]
+}
