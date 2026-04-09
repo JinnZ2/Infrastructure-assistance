@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { MOCK_ALERTS, REGIONS } from "@/lib/mock-data";
 import { filterAlerts } from "@/lib/alert-service";
 import { InfrastructureAlert } from "@/lib/types";
 import { AlertCard } from "@/components/dashboard/AlertCard";
-import { MapMock } from "@/components/dashboard/MapMock";
 import { AlertDetailPanel } from "@/components/dashboard/AlertDetailPanel";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -32,6 +32,15 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Leaflet requires `window` — load it client-side only
+const AlertMap = dynamic(
+  () => import("@/components/dashboard/AlertMap").then((mod) => mod.AlertMap),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="w-full h-full rounded-xl" />,
+  }
+);
 
 export default function InfraGuardDashboard() {
   const [alerts, setAlerts] = useState<InfrastructureAlert[]>([]);
@@ -258,7 +267,7 @@ export default function InfraGuardDashboard() {
             {isLoading ? (
               <Skeleton className="w-full h-full rounded-xl" />
             ) : (
-              <MapMock
+              <AlertMap
                 alerts={filteredAlerts}
                 selectedAlert={selectedAlert}
                 onAlertClick={setSelectedAlert}
