@@ -5,14 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { 
-  AlertTriangle, 
-  CloudLightning, 
-  Waves, 
-  Flame, 
-  Construction, 
+import {
+  AlertTriangle,
+  CloudLightning,
+  Waves,
+  Flame,
+  Construction,
   MapPin,
-  CircleCheck,
   Info
 } from "lucide-react";
 
