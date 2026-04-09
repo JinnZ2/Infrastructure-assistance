@@ -25,6 +25,7 @@ interface AlertDetailPanelProps {
 
 export function AlertDetailPanel({ alert, onClose }: AlertDetailPanelProps) {
   const [summary, setSummary] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
   if (!alert) {
@@ -43,6 +44,7 @@ export function AlertDetailPanel({ alert, onClose }: AlertDetailPanelProps) {
 
   const handleSummarize = async () => {
     setIsSummarizing(true);
+    setSummaryError(false);
     try {
       const result: SummarizeAlertDetailsOutput = await summarizeAlertDetails({
         alertDescription: alert.description
@@ -50,6 +52,7 @@ export function AlertDetailPanel({ alert, onClose }: AlertDetailPanelProps) {
       setSummary(result.summary);
     } catch (error) {
       console.error("Failed to summarize alert", error);
+      setSummaryError(true);
     } finally {
       setIsSummarizing(false);
     }
@@ -107,13 +110,13 @@ export function AlertDetailPanel({ alert, onClose }: AlertDetailPanelProps) {
                 <h3 className="text-sm font-semibold">InfraGuard AI Summary</h3>
               </div>
               {!summary && !isSummarizing && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <Button
+                  size="sm"
+                  variant="outline"
                   className="h-8 text-xs gap-1.5"
                   onClick={handleSummarize}
                 >
-                  Generate Summary
+                  {summaryError ? 'Retry' : 'Generate Summary'}
                 </Button>
               )}
             </div>
@@ -126,6 +129,10 @@ export function AlertDetailPanel({ alert, onClose }: AlertDetailPanelProps) {
             ) : summary ? (
               <p className="text-sm italic text-foreground/90 border-l-2 border-primary pl-3 py-1">
                 &quot;{summary}&quot;
+              </p>
+            ) : summaryError ? (
+              <p className="text-xs text-destructive">
+                Failed to generate summary. Check your API key configuration and try again.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground italic">

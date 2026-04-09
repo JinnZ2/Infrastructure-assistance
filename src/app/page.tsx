@@ -3,9 +3,9 @@
 import { useState, useMemo } from "react";
 import { MOCK_ALERTS, REGIONS } from "@/lib/mock-data";
 import { InfrastructureAlert } from "@/lib/types";
-import { AlertCard } from "@/components/AlertCard";
-import { MapMock } from "@/components/MapMock";
-import { AlertDetailPanel } from "@/components/AlertDetailPanel";
+import { AlertCard } from "@/components/dashboard/AlertCard";
+import { MapMock } from "@/components/dashboard/MapMock";
+import { AlertDetailPanel } from "@/components/dashboard/AlertDetailPanel";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
@@ -35,26 +35,16 @@ export default function InfraGuardDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const filteredAlerts = useMemo(() => {
-    try {
-      return MOCK_ALERTS.filter(alert => {
-        const matchesSearch = alert.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              alert.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRegion = selectedRegion === "all" || alert.state === selectedRegion;
-        return matchesSearch && matchesRegion;
-      });
-    } catch (error) {
-      console.error('Error filtering alerts:', error);
-      return [];
-    }
+    return MOCK_ALERTS.filter(alert => {
+      const matchesSearch = alert.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            alert.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRegion = selectedRegion === "all" || alert.state === selectedRegion;
+      return matchesSearch && matchesRegion;
+    });
   }, [searchQuery, selectedRegion]);
 
   const criticalCount = useMemo(() => {
-    try {
-      return MOCK_ALERTS.filter(a => a.severity === 'Critical').length;
-    } catch (error) {
-      console.error('Error counting critical alerts:', error);
-      return 0;
-    }
+    return MOCK_ALERTS.filter(a => a.severity === 'Critical').length;
   }, []);
 
   return (
