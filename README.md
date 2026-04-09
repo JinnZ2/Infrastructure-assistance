@@ -1,10 +1,10 @@
 # InfraGuard
 
-Real-time infrastructure alert aggregation, visualization, and AI-powered summarization for the Upper Midwest region.
+Real-time infrastructure alert aggregation, visualization, and AI-powered analysis for the Upper Midwest region.
 
 ## Overview
 
-InfraGuard is a Next.js dashboard that collects infrastructure alerts from multiple sources (NOAA, Open511, USGS, NBI, FIRMS) and presents them on an interactive map with a filterable alert feed. It uses Genkit with Google Gemini to generate concise AI summaries of complex alert descriptions.
+InfraGuard is a Next.js dashboard that collects infrastructure alerts from multiple sources (NOAA, Open511, USGS, NBI, FIRMS) and presents them on an interactive map with a filterable alert feed. It uses Genkit with Google Gemini to provide AI-powered alert summaries and incident triage with recommended response actions.
 
 ## Tech Stack
 
@@ -27,16 +27,21 @@ src/
 │   ├── genkit.ts               # Genkit initialization & config
 │   ├── dev.ts                  # Development entry point for flows
 │   └── flows/
-│       └── summarize-alert-details.ts  # Alert summarization flow
-├── app/                        # Next.js App Router
-│   ├── layout.tsx              # Root layout (Inter font, metadata)
+│       ├── summarize-alert-details.ts  # Alert summarization flow
+│       └── triage-alert.ts     # AI triage (risk assessment + actions)
+├── app/
+│   ├── api/alerts/route.ts     # REST API for alert data
+│   ├── layout.tsx              # Root layout (Inter font, Toaster)
 │   ├── page.tsx                # Main InfraGuard dashboard
-│   ├── globals.css             # CSS variables, theme, animations
+│   ├── loading.tsx             # Route loading skeleton
+│   ├── error.tsx               # Route error boundary
+│   ├── globals.css             # CSS variables, dark/light themes
 │   └── favicon.ico
 ├── components/
 │   ├── dashboard/              # Custom dashboard components
 │   │   ├── AlertCard.tsx       # Alert card in sidebar feed
-│   │   ├── AlertDetailPanel.tsx # Detail view with AI summary
+│   │   ├── AlertDetailPanel.tsx # Detail view with AI summary + triage
+│   │   ├── ErrorBoundary.tsx   # Client error boundary
 │   │   └── MapMock.tsx         # Interactive map visualization
 │   └── ui/                     # shadcn/ui component library
 ├── hooks/
@@ -44,9 +49,9 @@ src/
 │   └── use-toast.ts            # Toast notification state
 └── lib/
     ├── types.ts                # TypeScript interfaces
+    ├── alert-service.ts        # Data service layer (fetch + filter)
     ├── mock-data.ts            # Demo alerts & region definitions
-    ├── utils.ts                # cn() utility (clsx + tailwind-merge)
-    └── placeholder-images.*    # Placeholder image URLs
+    └── utils.ts                # cn() utility (clsx + tailwind-merge)
 docs/
 └── blueprint.md                # Design specification
 ```
@@ -55,7 +60,7 @@ docs/
 
 - Node.js 18+
 - npm
-- A Google GenAI API key (for AI summarization)
+- A Google GenAI API key (for AI features)
 
 ## Getting Started
 
@@ -95,15 +100,22 @@ docs/
 
 ## Features
 
-- **Alert Feed** - Searchable, filterable sidebar with real-time alert cards
+- **Alert Feed** - Searchable, filterable sidebar with real-time alert cards and loading skeletons
 - **Map Visualization** - Interactive map with color-coded severity markers and pulse animations for critical alerts
 - **AI Summarization** - One-click Gemini-powered summaries of complex alert descriptions
+- **AI Triage** - Automated risk assessment with impact analysis, affected systems, and prioritized response actions
+- **Interactive Checklist** - Checkable action items (AI-generated or default) with completion tracking
+- **Toast Notifications** - Critical alert notifications via toast system
+- **Dark/Light Mode** - Toggle between dark and light themes
 - **Responsive Layout** - Collapsible sidebar, desktop detail panel, mobile overlay modal
 - **Region Filtering** - Filter alerts by Upper Midwest states (MN, WI, MI, IA, IL, ND, SD)
+- **Error Handling** - Route-level error boundaries and loading states
+- **API Layer** - REST endpoint at `/api/alerts` with pluggable data service
 
-## Deployment
+## API
 
-Configured for Firebase App Hosting via `apphosting.yaml`. The app builds as a standalone Next.js output.
+### `GET /api/alerts`
+Returns all alerts as JSON. Currently serves mock data; designed to be swapped for real API integrations.
 
 ## Current Limitations
 

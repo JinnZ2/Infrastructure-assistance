@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { InfrastructureAlert, RegionFocus } from "@/lib/types";
+import { InfrastructureAlert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MapPin, ZoomIn, ZoomOut, Layers, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ export function MapMock({ alerts, selectedAlert, onAlertClick, selectedRegion }:
           return (
             <button
               key={alert.id}
+              aria-label={`${alert.severity} alert: ${alert.title}`}
               className={cn(
                 "absolute -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-125 z-10",
                 isSelected && "z-20 scale-150"
