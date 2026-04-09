@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { MOCK_ALERTS, REGIONS } from "@/lib/mock-data";
+import { REGIONS } from "@/lib/mock-data";
 import { filterAlerts } from "@/lib/alert-service";
 import { InfrastructureAlert } from "@/lib/types";
 import { AlertCard } from "@/components/dashboard/AlertCard";
@@ -51,17 +51,41 @@ export default function InfraGuardDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDark, setIsDark] = useState(true);
   const [notifiedIds, setNotifiedIds] = useState<Set<string>>(new Set());
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const alertCountRef = useRef(0);
 
-  // Load alerts
-  useEffect(() => {
-    setIsLoading(true);
-    // Simulate async fetch — swap with real API call when ready
-    const timer = setTimeout(() => {
-      setAlerts(MOCK_ALERTS);
+  // Fetch alerts from the cached API route
+  const loadAlerts = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const res = await fetch('/api/alerts');
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      const data = await res.json();
+      const fetched: InfrastructureAlert[] = data.alerts ?? data;
+      setAlerts(fetched);
+      alertCountRef.current = fetched.length;
+      setLastFetched(new Date());
+    } catch (error) {
+      console.error('[Dashboard] Failed to fetch alerts:', error);
+      if (alertCountRef.current === 0) {
+        toast({
+          title: 'Failed to load alerts',
+          description: 'Could not reach the server. Will retry automatically.',
+          variant: 'destructive',
+        });
+      }
+    } finally {
       setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    }
   }, []);
+
+  // Initial load + 30-minute polling
+  useEffect(() => {
+    const pollMs = 30 * 60 * 1000;
+    loadAlerts();
+    const interval = setInterval(() => loadAlerts(false), pollMs);
+    return () => clearInterval(interval);
+  }, [loadAlerts]);
 
   // Notify on critical alerts
   useEffect(() => {
@@ -190,11 +214,17 @@ export default function InfraGuardDashboard() {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Database className="h-3 w-3" />
-              <span>{isLoading ? 'Loading...' : 'Real-time Syncing'}</span>
+              <span>
+                {isLoading
+                  ? 'Fetching...'
+                  : lastFetched
+                    ? `Cached ${lastFetched.toLocaleTimeString()}`
+                    : 'Syncing'}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`} />
-              <span>{isLoading ? 'Fetching' : 'Connected'}</span>
+              <span>{isLoading ? 'Refreshing' : 'Connected'}</span>
             </div>
           </div>
         </div>
