@@ -1,3 +1,8 @@
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 

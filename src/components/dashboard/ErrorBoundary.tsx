@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { Component, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";

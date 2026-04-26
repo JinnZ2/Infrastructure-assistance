@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { useState, useCallback } from "react";
 import { InfrastructureAlert } from "@/lib/types";
 import { summarizeAlertDetails, SummarizeAlertDetailsOutput } from "@/ai/flows/summarize-alert-details";

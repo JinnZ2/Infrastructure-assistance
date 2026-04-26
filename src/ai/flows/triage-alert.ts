@@ -1,5 +1,8 @@
 'use server';
 /**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ *
  * @fileOverview AI triage flow that analyzes an infrastructure alert and
  * returns a severity assessment with recommended response actions.
  *

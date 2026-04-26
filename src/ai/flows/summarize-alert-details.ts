@@ -1,5 +1,8 @@
 'use server';
 /**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ *
  * @fileOverview A Genkit flow that summarizes complex infrastructure alert descriptions.
  *
  * - summarizeAlertDetails - A function that handles the alert summarization process.

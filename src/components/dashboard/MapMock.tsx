@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { useEffect, useState } from "react";
 import { InfrastructureAlert } from "@/lib/types";
 import { cn } from "@/lib/utils";
