@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { REGIONS } from "@/lib/mock-data";

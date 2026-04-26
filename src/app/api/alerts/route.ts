@@ -1,3 +1,8 @@
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchAlerts, refreshAlerts, cacheStatus } from '@/lib/alert-service';
 

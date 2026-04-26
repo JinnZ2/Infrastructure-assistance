@@ -1,3 +1,8 @@
+/**
+ * Ontology: every claim in this module is dX/dt under bounds.
+ * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
+ */
+
 import { InfrastructureAlert } from './types';
 import { MOCK_ALERTS } from './mock-data';
 import { AlertCache } from './alert-cache';
