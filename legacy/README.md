@@ -85,6 +85,8 @@ filter. Note that `REGIONS`' bounding boxes were falsified for a *different* use
 [`../docs/FALSIFICATION_LOG.md`](../docs/FALSIFICATION_LOG.md) #2. They remain
 correct for what they are: dashboard focus areas.
 
-**`.modified`** — a zero-byte tooling artifact. It carries no claim, so there is
-nothing here to preserve; it is noise rather than precedent. Left in place rather
-than moved, since deleting it is a call for a human to make.
+**`.modified`** — deleted, not archived. A zero-byte tooling artifact from the
+Firebase Studio import (`7f742dc`), read by nothing. It carried no claim and no
+content, so there were no bounds to preserve — noise rather than precedent, and
+the only thing in this sweep that was correct to remove outright. Recorded here
+so its absence is a decision on the record rather than an unexplained gap.
