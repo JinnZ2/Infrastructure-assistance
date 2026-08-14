@@ -3,16 +3,19 @@
  * See DIFFERENTIAL_FRAME.md before extracting nouns out of context.
  */
 
-import { InfrastructureAlert } from './types';
+import { InfrastructureAlert, SourceStatus } from './types';
 import { MOCK_ALERTS } from './mock-data';
 import { AlertCache } from './alert-cache';
+import { fetchAllSources, sortAlerts } from './sources';
+import { enabledSources, mockDataEnabled } from './sources/config';
 
 /**
  * Alert data service with a 30-minute cache and disk persistence.
  *
- * The upstream fetcher currently returns mock data. To integrate real APIs,
- * replace `fetchFromUpstream()` with calls to NOAA, Open511, USGS, NBI, FIRMS
- * and normalize each response to `InfrastructureAlert[]`.
+ * Live sources (NOAA, USGS, Open511, NBI, FIRMS) are queried through
+ * `src/lib/sources`; which ones run is controlled by `ALERT_SOURCES`. Set
+ * `ALERTS_USE_MOCK=true` — or enable no sources at all — to serve the demo data
+ * in `mock-data.ts` instead.
  *
  * Cache behavior:
  *  - Fresh data served from memory for 30 minutes after each fetch.
@@ -21,16 +24,29 @@ import { AlertCache } from './alert-cache';
  *  - On cold start, the disk cache (.cache/alerts.json) is loaded automatically.
  */
 
+/** Outcome of the most recent upstream attempt, surfaced through the API route. */
+let lastSourceStatuses: SourceStatus[] = [];
+
 async function fetchFromUpstream(): Promise<InfrastructureAlert[]> {
-  // TODO: Replace with real API calls when data sources are integrated.
-  // Example:
-  //   const [noaa, open511, usgs] = await Promise.allSettled([
-  //     fetchNOAA(),
-  //     fetchOpen511(),
-  //     fetchUSGS(),
-  //   ]);
-  //   return [...fulfilled(noaa), ...fulfilled(open511), ...fulfilled(usgs)];
-  return MOCK_ALERTS;
+  const sources = enabledSources();
+
+  if (mockDataEnabled() || sources.length === 0) {
+    lastSourceStatuses = [];
+    return sortAlerts(MOCK_ALERTS);
+  }
+
+  const { alerts, sources: statuses } = await fetchAllSources();
+  lastSourceStatuses = statuses;
+
+  // Partial results are fine — a single source going down shouldn't blank the
+  // dashboard. But if every source failed, throw so the cache serves its last
+  // known-good set instead of caching an empty list for 30 minutes.
+  if (statuses.length > 0 && statuses.every(status => !status.ok)) {
+    const reasons = statuses.map(s => `${s.source}: ${s.error}`).join('; ');
+    throw new Error(`All alert sources failed — ${reasons}`);
+  }
+
+  return alerts;
 }
 
 // Singleton cache instance — shared across all requests in the server process.
@@ -55,23 +71,17 @@ export function cacheStatus() {
   return alertCache.status();
 }
 
+/** Per-source outcome of the most recent upstream attempt. */
+export function sourceStatuses(): SourceStatus[] {
+  return lastSourceStatuses;
+}
+
 /** Force a cache refresh (e.g. for a manual "refresh now" button). */
 export async function refreshAlerts(): Promise<InfrastructureAlert[]> {
   return alertCache.refresh();
 }
 
-/** Filter alerts by search query and region. */
-export function filterAlerts(
-  alerts: InfrastructureAlert[],
-  query: string,
-  region: string
-): InfrastructureAlert[] {
-  const q = query.toLowerCase();
-  return alerts.filter(alert => {
-    const matchesSearch = !q ||
-      alert.title.toLowerCase().includes(q) ||
-      alert.description.toLowerCase().includes(q);
-    const matchesRegion = region === 'all' || alert.state === region;
-    return matchesSearch && matchesRegion;
-  });
-}
+// Re-exported for server-side callers. Client components must import it from
+// '@/lib/alert-filters' directly — importing it from here would pull the
+// disk-backed cache (and its `fs` dependency) into the browser bundle.
+export { filterAlerts } from './alert-filters';

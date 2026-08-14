@@ -20,9 +20,17 @@ npm run genkit:watch # Genkit with file watching
 - **shadcn/ui** components in `src/components/ui/` (do not manually edit these)
 - **Custom components** in `src/components/dashboard/`
 - **AI flows** in `src/ai/flows/` (must use `'use server'` directive)
-- **Data service** in `src/lib/alert-service.ts` (abstraction over data sources)
+- **Data service** in `src/lib/alert-service.ts` (cache + source orchestration, server-only)
+- **Source integrations** in `src/lib/sources/` (one module per upstream feed)
 - **API routes** in `src/app/api/` (REST endpoints)
 - **Path alias**: `@/` maps to `src/`
+
+### Server/client boundary
+
+`alert-service.ts` imports `alert-cache.ts`, which uses `fs`. It must never be
+imported from a client component or the build fails with `Can't resolve 'fs'`.
+Pure helpers the dashboard needs live in `src/lib/alert-filters.ts` instead —
+put new client-safe helpers there, not in the service.
 
 ## Code Conventions
 
@@ -44,9 +52,13 @@ npm run genkit:watch # Genkit with file watching
 - `src/ai/genkit.ts` - Genkit singleton initialization
 - `src/ai/flows/summarize-alert-details.ts` - AI summarization flow
 - `src/ai/flows/triage-alert.ts` - AI triage flow (risk assessment + actions)
-- `src/lib/alert-service.ts` - Data fetching and filtering service
+- `src/lib/alert-service.ts` - Cache + source orchestration (server-only)
+- `src/lib/alert-filters.ts` - Client-safe alert filtering
+- `src/lib/alert-cache.ts` - 30-minute TTL cache with disk persistence
+- `src/lib/sources/index.ts` - Concurrent fetch/merge across enabled sources
+- `src/lib/sources/config.ts` - Env-driven source configuration
 - `src/lib/mock-data.ts` - Demo data (MOCK_ALERTS, REGIONS)
-- `src/lib/types.ts` - TypeScript interfaces (InfrastructureAlert, RegionFocus)
+- `src/lib/types.ts` - TypeScript interfaces (InfrastructureAlert, SourceStatus)
 - `docs/blueprint.md` - Design specification and style guidelines
 
 ## Adding New AI Flows
@@ -67,19 +79,37 @@ npm run genkit:watch # Genkit with file watching
 
 ## Adding New Data Sources
 
-1. Add a fetcher function in `src/lib/alert-service.ts`
-2. Normalize the response to `InfrastructureAlert` type
-3. Add the source to the `AlertSource` union in `src/lib/types.ts`
-4. The API route at `src/app/api/alerts/route.ts` will automatically serve the data
+1. Add the source to the `AlertSource` union in `src/lib/types.ts`
+2. Create `src/lib/sources/<source>.ts` exporting two things:
+   - a pure `normalize<Source>(raw)` that maps the upstream payload to
+     `InfrastructureAlert[]` (keep it pure — it is the testable part), and
+   - an async `fetch<Source>()` that calls the API via `fetchJson`/`fetchText`
+     from `./http` and hands the result to the normalizer
+3. Register the fetcher in the `FETCHERS` map in `src/lib/sources/index.ts`
+4. If it needs credentials or an endpoint, add a config reader in
+   `src/lib/sources/config.ts` and document the variables in `.env.example`
+5. The API route serves the merged result automatically
+
+Conventions for source modules:
+
+- Never invent thresholds or severities — map from what the feed publishes, and
+  if a judgement needs a threshold, read it from the upstream data (see how
+  `usgs.ts` joins WaterWatch flood stages)
+- Prefer an authoritative state field from the feed; fall back to
+  `stateForPoint()` only when the feed gives coordinates alone
+- Throw on failure rather than returning `[]` — the aggregator isolates each
+  source and reports the error through `SourceStatus`
 
 ## Environment Variables
 
 - `GOOGLE_GENAI_API_KEY` - Required for AI summarization and triage features
+- `ALERT_SOURCES` - Which feeds to query (default `NOAA,USGS`)
+- `ALERTS_USE_MOCK` - Set `true` to serve `mock-data.ts` offline
 - See `.env.example` for the full list
 
 ## Known Limitations
 
-- Mock data only (no live API integrations yet) — swap `fetchAlerts()` in alert-service.ts
 - No test suite exists yet
-- Map is a stylized mock (no real mapping library)
 - No authentication or persistent storage
+- Point-to-state inference uses bounding boxes; border cases may mis-attribute
+- Open511, FIRMS, and NBI stay disabled until their configuration is supplied

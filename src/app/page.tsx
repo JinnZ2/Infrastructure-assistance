@@ -8,7 +8,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { REGIONS } from "@/lib/mock-data";
-import { filterAlerts } from "@/lib/alert-service";
+import { filterAlerts } from "@/lib/alert-filters";
 import { InfrastructureAlert } from "@/lib/types";
 import { AlertCard } from "@/components/dashboard/AlertCard";
 import { AlertDetailPanel } from "@/components/dashboard/AlertDetailPanel";
@@ -64,18 +64,36 @@ export default function InfraGuardDashboard() {
     if (showLoading) setIsLoading(true);
     try {
       const res = await fetch('/api/alerts');
-      if (!res.ok) throw new Error(`API returned ${res.status}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error ?? `API returned ${res.status}`);
+      }
       const fetched: InfrastructureAlert[] = data.alerts ?? data;
       setAlerts(fetched);
       alertCountRef.current = fetched.length;
       setLastFetched(new Date());
+
+      // Some sources succeeded and others didn't — the feed is incomplete.
+      const failed: { source: string }[] = (data.sources ?? []).filter(
+        (s: { ok: boolean }) => !s.ok
+      );
+      if (failed.length > 0) {
+        toast({
+          title: 'Some alert sources are unavailable',
+          description: `Showing partial results. Unreachable: ${failed
+            .map(s => s.source)
+            .join(', ')}.`,
+        });
+      }
     } catch (error) {
       console.error('[Dashboard] Failed to fetch alerts:', error);
       if (alertCountRef.current === 0) {
         toast({
           title: 'Failed to load alerts',
-          description: 'Could not reach the server. Will retry automatically.',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Could not reach the server. Will retry automatically.',
           variant: 'destructive',
         });
       }
