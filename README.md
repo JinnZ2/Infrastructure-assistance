@@ -48,15 +48,15 @@ src/
 │   │   ├── AlertCard.tsx       # Alert card in sidebar feed
 │   │   ├── AlertDetailPanel.tsx # Detail view with AI summary + triage
 │   │   ├── AlertMap.tsx        # Leaflet + OpenStreetMap alert map
-│   │   ├── ErrorBoundary.tsx   # Client error boundary
-│   │   └── MapMock.tsx         # Stylized fallback map
+│   │   └── ErrorBoundary.tsx   # Client error boundary
 │   └── ui/                     # shadcn/ui component library
 ├── hooks/
 │   ├── use-mobile.tsx          # Responsive breakpoint hook
 │   └── use-toast.ts            # Toast notification state
 └── lib/
     ├── types.ts                # TypeScript interfaces
-    ├── alert-service.ts        # Data service layer (fetch + filter)
+    ├── alert-service.ts        # Cache + source orchestration (server-only)
+    ├── alert-filters.ts        # Client-safe filtering (no Node deps)
     ├── alert-cache.ts          # 30-min TTL cache with disk persistence
     ├── mock-data.ts            # Demo alerts & region definitions
     ├── sources/                # Live upstream integrations
@@ -71,7 +71,12 @@ src/
     │   └── firms.ts            # NASA FIRMS active fire detections
     └── utils.ts                # cn() utility (clsx + tailwind-merge)
 docs/
-└── blueprint.md                # Design specification
+├── blueprint.md                # Design specification
+└── FALSIFICATION_LOG.md        # Tested claims, what falsified them, open unknowns
+legacy/                         # Retired artifacts, kept with their bounds
+├── README.md                   # Why each was retired, what precedent carries
+├── MapMock.tsx                 # Pre-Leaflet stylized map
+└── metadata.json               # Firebase Studio import scaffolding
 ```
 
 ## Prerequisites

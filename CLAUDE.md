@@ -60,6 +60,10 @@ put new client-safe helpers there, not in the service.
 - `src/lib/mock-data.ts` - Demo data (MOCK_ALERTS, REGIONS)
 - `src/lib/types.ts` - TypeScript interfaces (InfrastructureAlert, SourceStatus)
 - `docs/blueprint.md` - Design specification and style guidelines
+- `docs/FALSIFICATION_LOG.md` - Claims already tested, what falsified them, and
+  the open unknowns. **Read this before assuming an integration is verified** —
+  it records which assumptions have been run and which have not.
+- `legacy/README.md` - Retired artifacts kept with the bounds they held under
 
 ## Adding New AI Flows
 
@@ -106,6 +110,20 @@ Conventions for source modules:
 - `ALERT_SOURCES` - Which feeds to query (default `NOAA,USGS`)
 - `ALERTS_USE_MOCK` - Set `true` to serve `mock-data.ts` offline
 - See `.env.example` for the full list
+
+## Retiring Code
+
+Superseded code goes to `legacy/`, not to `git rm`. Add an entry to
+`legacy/README.md` recording what it claimed, the bounds under which that held,
+the commit that ended it, and what precedent still carries. `legacy/` stays
+inside the `tsconfig.json` include so retired code keeps typechecking — if it
+stops compiling, that is a result to read, not a warning to silence.
+
+When a test falsifies an assumption, append an entry to
+`docs/FALSIFICATION_LOG.md` rather than silently fixing the code. Compute
+expected values independently of the implementation — every bug caught so far
+produced *plausible* output that a snapshot of existing behavior would have
+enshrined.
 
 ## Known Limitations
 
