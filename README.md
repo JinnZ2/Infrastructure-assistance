@@ -47,19 +47,36 @@ src/
 │   ├── dashboard/              # Custom dashboard components
 │   │   ├── AlertCard.tsx       # Alert card in sidebar feed
 │   │   ├── AlertDetailPanel.tsx # Detail view with AI summary + triage
-│   │   ├── ErrorBoundary.tsx   # Client error boundary
-│   │   └── MapMock.tsx         # Interactive map visualization
+│   │   ├── AlertMap.tsx        # Leaflet + OpenStreetMap alert map
+│   │   └── ErrorBoundary.tsx   # Client error boundary
 │   └── ui/                     # shadcn/ui component library
 ├── hooks/
 │   ├── use-mobile.tsx          # Responsive breakpoint hook
 │   └── use-toast.ts            # Toast notification state
 └── lib/
     ├── types.ts                # TypeScript interfaces
-    ├── alert-service.ts        # Data service layer (fetch + filter)
+    ├── alert-service.ts        # Cache + source orchestration (server-only)
+    ├── alert-filters.ts        # Client-safe filtering (no Node deps)
+    ├── alert-cache.ts          # 30-min TTL cache with disk persistence
     ├── mock-data.ts            # Demo alerts & region definitions
+    ├── sources/                # Live upstream integrations
+    │   ├── index.ts            # Concurrent fetch + merge across sources
+    │   ├── config.ts           # Env-driven source configuration
+    │   ├── http.ts             # Timeout + retry fetch helpers
+    │   ├── geo.ts              # Centroids, bboxes, point-to-state
+    │   ├── noaa.ts             # National Weather Service alerts
+    │   ├── usgs.ts             # River gauges vs published flood stages
+    │   ├── open511.ts          # DOT road events
+    │   ├── nbi.ts              # National Bridge Inventory
+    │   └── firms.ts            # NASA FIRMS active fire detections
     └── utils.ts                # cn() utility (clsx + tailwind-merge)
 docs/
-└── blueprint.md                # Design specification
+├── blueprint.md                # Design specification
+└── FALSIFICATION_LOG.md        # Tested claims, what falsified them, open unknowns
+legacy/                         # Retired artifacts, kept with their bounds
+├── README.md                   # Why each was retired, what precedent carries
+├── MapMock.tsx                 # Pre-Leaflet stylized map
+└── metadata.json               # Firebase Studio import scaffolding
 ```
 
 ## Prerequisites
@@ -118,18 +135,69 @@ docs/
 - **Error Handling** - Route-level error boundaries and loading states
 - **API Layer** - REST endpoint at `/api/alerts` with pluggable data service
 
+## Data Sources
+
+Alerts are aggregated from live upstream feeds by `src/lib/sources/`. Sources are
+opt-in via `ALERT_SOURCES`; the two that need no credentials are on by default.
+
+| Source | Provides | Credentials | Default |
+|--------|----------|-------------|---------|
+| **NOAA** | Active National Weather Service alerts (`api.weather.gov`) | None — but set a contact `NWS_USER_AGENT` | On |
+| **USGS** | River gauges at or above their published NWS flood stage | None | On |
+| **Open511** | DOT road events (closures, incidents) | `OPEN511_BASE_URL` (+ optional key) | Off |
+| **FIRMS** | NASA active fire detections | `FIRMS_MAP_KEY` | Off |
+| **NBI** | National Bridge Inventory structures in poor condition | `NBI_FEATURE_SERVER_URL` | Off |
+
+Notes on how the data is interpreted:
+
+- **USGS flood flagging is threshold-driven, not heuristic.** WaterWatch publishes
+  each site's action / flood / moderate / major stages; a gauge only becomes an
+  alert once its current reading reaches its own published action stage.
+- **Open511 has no national endpoint.** It is a specification each DOT deploys
+  separately, so you must supply the base URL of a deployment you have access to.
+- **NBI is an annual inventory, not a live feed.** Its entries are standing
+  condition flags and are emitted at Warning/Info, never Critical.
+- **Severity is normalized** from each source's own vocabulary into
+  `Critical | Warning | Info | Unknown`.
+
+Set `ALERTS_USE_MOCK=true` (or enable no sources) to serve the demo data in
+`src/lib/mock-data.ts` instead — useful for offline development.
+
+### Caching and degradation
+
+Upstream feeds are polled behind a 30-minute cache (`src/lib/alert-cache.ts`)
+that persists to `.cache/alerts.json`, so restarts and cold starts come up with
+the last known-good data. Sources are fetched concurrently and fail
+independently:
+
+- **One source down** → the others still render; the response is marked
+  `degraded` and the UI shows which feeds are unreachable.
+- **All sources down** → the last cached set is served rather than an empty feed.
+- **All sources down with nothing cached** → `503` with a user-facing message.
+
 ## API
 
 ### `GET /api/alerts`
-Returns all alerts as JSON. Currently serves mock data; designed to be swapped for real API integrations.
+Returns aggregated alerts as JSON. Pass `?refresh=true` to bypass the cache TTL.
+
+```jsonc
+{
+  "alerts": [ /* InfrastructureAlert[] */ ],
+  "cache":  { "cached": true, "fetchedAt": 1786697860270, "age": 1, "stale": false },
+  "sources": [ { "source": "NOAA", "ok": true, "count": 12, "durationMs": 410 } ],
+  "degraded": false
+}
+```
 
 ## Current Limitations
 
-- Uses mock data (no live API integrations yet)
 - No authentication or authorization
 - No persistent database for alert history
 - No automated tests
-- Map is a stylized mock (no real mapping library)
+- Point-to-state inference for feeds that report only coordinates uses
+  bounding boxes, so points near a state border may be mis-attributed
+- NBI field names vary between ArcGIS hosts; `NBI_WHERE` may need adjusting
+  for a given layer
 
 ## License
 

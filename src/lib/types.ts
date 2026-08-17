@@ -21,6 +21,17 @@ export interface InfrastructureAlert {
   description: string;
   timestamp: string;
   locationName?: string;
+  /** Link back to the upstream record, when the source provides one. */
+  url?: string;
+}
+
+/** Per-source outcome of the last upstream fetch, for diagnostics and degraded-state UI. */
+export interface SourceStatus {
+  source: AlertSource;
+  ok: boolean;
+  count: number;
+  durationMs: number;
+  error?: string;
 }
 
 export interface RegionFocus {
